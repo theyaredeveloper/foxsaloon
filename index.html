@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoxSaloon RP</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  height: 100%;
+  overflow: hidden;
+  background: linear-gradient(120deg, #111, #222);
+  color: #fff;
+}
+
+.centered {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+h1 { font-size: 2.8em; animation: fadeIn 2s ease-in-out; }
+button {
+  margin-top: 20px;
+  padding: 15px 30px;
+  font-size: 1.2em;
+  border: none;
+  border-radius: 10px;
+  background: #ff9900;
+  color: #111;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover { background: #ffb733; }
+
+@keyframes fadeIn { from {opacity:0; transform: translateY(-20px);} to {opacity:1; transform: translateY(0);} }
+.hidden { display: none; }
+
+.countdown { font-size: 4em; color: #ff9900; animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100% {transform:scale(1);} 50% {transform:scale(1.2);} }
+
+.question button { margin: 10px; background: #00ccff; color: #111; }
+.question button:hover { background: #33ddff; }
+
+audio { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Schermata Inizio -->
+<div id="startScreen" class="centered">
+  <h1>Benvenuto al FoxSaloon RP ✂️🦊</h1>
+  <button id="startBtn">Inizia</button>
+</div>
+
+<!-- Countdown -->
+<div id="countdownScreen" class="centered hidden">
+  <h1>Preparati! Sta per iniziare...</h1>
+  <div id="countdown" class="countdown">5</div>
+</div>
+
+<!-- Domande -->
+<div id="questionScreen" class="centered hidden question">
+  <h1 id="questionTitle">Domanda</h1>
+  <div id="answers"></div>
+</div>
+
+<!-- Messaggio finale -->
+<div id="finalScreen" class="centered hidden">
+  <h1>Grazie per aver partecipato!</h1>
+  <button id="returnBtn">Torna su Discord</button>
+</div>
+
+<!-- Musica chill -->
+<audio id="chillMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" loop></audio>
+
+<script>
+const startBtn = document.getElementById('startBtn');
+const startScreen = document.getElementById('startScreen');
+const countdownScreen = document.getElementById('countdownScreen');
+const questionScreen = document.getElementById('questionScreen');
+const finalScreen = document.getElementById('finalScreen');
+const countdownEl = document.getElementById('countdown');
+const questionTitle = document.getElementById('questionTitle');
+const answersDiv = document.getElementById('answers');
+const returnBtn = document.getElementById('returnBtn');
+const chillMusic = document.getElementById('chillMusic');
+
+let currentQuestion = 0;
+let flow = []; // array per domande selezionate Uomo/Donna
+
+// Domande maschili
+const maleQuestions = [
+  { q: "Che taglio vuoi?", options: ["Corto ✂️","Lungo ✂️"] },
+  { q: "Vuoi barba?", options: ["Si 🧔","No ❌"] },
+  { q: "Preferisci capelli lisci o mossi?", options: ["Lisci","Mossi"] },
+  { q: "Vuoi shampoo speciale?", options: ["Si","No"] },
+  { q: "Vuoi piega finale?", options: ["Si","No"] },
+  { q: "Vuoi taglio delle sopracciglia?", options: ["Si","No"] },
+  { q: "Vuoi styling extra?", options: ["Si","No"] },
+  { q: "Vuoi acconciatura speciale?", options: ["Si","No"] },
+  { q: "Vuoi trattamenti nutrienti?", options: ["Si","No"] },
+  { q: "Vuoi rasatura testa?", options: ["Si","No"] },
+  { q: "Vuoi colorazione?", options: ["Si","No"] },
+  { q: "Vuoi ciocche colorate?", options: ["Si","No"] },
+  { q: "Vuoi accessori?", options: ["Si","No"] },
+  { q: "Vuoi rimozione colore precedente?", options: ["Si","No"] },
+  { q: "Vuoi trattamenti barba extra?", options: ["Si","No"] }
+];
+
+// Domande femminili
+const femaleQuestions = [
+  { q: "Che taglio vuoi?", options: ["Corto ✂️","Lungo ✂️"] },
+  { q: "Vuoi frangia?", options: ["Si","No"] },
+  { q: "Colore dei capelli?", options: ["Nero","Biondo","Castano","Rosso","Altro 🌈"] },
+  { q: "Vuoi ciocche colorate?", options: ["Si","No"] },
+  { q: "Preferisci capelli lisci o mossi?", options: ["Lisci","Mossi"] },
+  { q: "Vuoi shampoo speciale?", options: ["Si","No"] },
+  { q: "Vuoi piega finale?", options: ["Si","No"] },
+  { q: "Vuoi extension?", options: ["Si","No"] },
+  { q: "Vuoi acconciatura speciale?", options: ["Si","No"] },
+  { q: "Vuoi trattamenti nutrienti?", options: ["Si","No"] },
+  { q: "Vuoi taglio sopracciglia?", options: ["Si","No"] },
+  { q: "Vuoi styling extra?", options: ["Si","No"] },
+  { q: "Vuoi accessori?", options: ["Si","No"] },
+  { q: "Vuoi rimozione colore precedente?", options: ["Si","No"] },
+  { q: "Vuoi trattamenti speciali capelli?", options: ["Si","No"] }
+];
+
+// Start flow
+startBtn.addEventListener('click', () => {
+  chillMusic.play().catch(e=>console.log("Audio bloccato dal browser"));
+  startScreen.classList.add('hidden');
+  countdownScreen.classList.remove('hidden');
+
+  let count = 5; // countdown modificato a 5 secondi
+  const interval = setInterval(() => {
+    countdownEl.textContent = count;
+    count--;
+    if(count < 0){
+      clearInterval(interval);
+      countdownScreen.classList.add('hidden');
+      showGenderQuestion();
+    }
+  }, 1000);
+});
+
+// Prima domanda: Uomo o Donna
+function showGenderQuestion(){
+  questionScreen.classList.remove('hidden');
+  questionTitle.textContent = "Sei Uomo o Donna?";
+  answersDiv.innerHTML = "";
+
+  ["Uomo 👨", "Donna 👩"].forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      flow = (opt.includes("Uomo")) ? maleQuestions : femaleQuestions;
+      currentQuestion = 0;
+      showNextQuestion();
+    });
+    answersDiv.appendChild(btn);
+  });
+}
+
+// Mostra domande successive
+function showNextQuestion(){
+  if(currentQuestion >= flow.length){
+    questionScreen.classList.add('hidden');
+    finalScreen.classList.remove('hidden');
+    return;
+  }
+  questionScreen.classList.remove('hidden');
+  questionTitle.textContent = flow[currentQuestion].q;
+  answersDiv.innerHTML = "";
+  flow[currentQuestion].options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      currentQuestion++;
+      showNextQuestion();
+    });
+    answersDiv.appendChild(btn);
+  });
+}
+
+// Ritorno a Discord
+returnBtn.addEventListener('click', () => {
+  window.location.href = "DISCORD_INVITE_LINK"; // sostituisci con link server Discord
+});
+</script>
+
+</body>
+</html>
